@@ -1,6 +1,7 @@
 package utils;
 
 import io.appium.java_client.AppiumDriver;
+import io.appium.java_client.android.options.UiAutomator2Options;
 
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.PointerInput;
@@ -10,17 +11,18 @@ import io.github.cdimascio.dotenv.Dotenv;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.net.URL;
 import java.util.Collections;
+import java.util.Map;
 
 public class AppiumDriverManager {
     private static AppiumDriver driver;
     private static final int DEFAULT_WAIT_TIME = 10; // Default wait time in seconds
     private static Dotenv dotenv;
+    private static final String APK_URL_STRING = "/src/test/resources/binaries/android/com.kpmoney.android_3a.13.19-362_minAPI26(arm64-v8a,armeabi,armeabi-v7a,mips,mips64,x86,x86_64)(nodpi)_apkmirror.com.apk";
 
     // Load .env file
     static {
@@ -33,37 +35,33 @@ public class AppiumDriverManager {
     public static AppiumDriver getAppiumDriver() {
         if (driver == null) {
             try {
-                // General capabilities
-                DesiredCapabilities capabilities = new DesiredCapabilities();
-                capabilities.setCapability("platformName", dotenv.get("PLATFORM_NAME"));
-                capabilities.setCapability("appium:deviceName", dotenv.get("DEVICE_NAME"));
-                capabilities.setCapability("appium:automationName", dotenv.get("AUTOMATION_NAME"));
-                capabilities.setCapability("appium:platformVersion", dotenv.get("PLATFORM_VERSION"));
-                capabilities.setCapability("appium:appPackage", dotenv.get("APP_PACKAGE"));
-                capabilities.setCapability("appium:appActivity", dotenv.get("APP_ACTIVITY"));
-                capabilities.setCapability("appium:noReset", Boolean.parseBoolean(dotenv.get("APPIUM_NORESET")));
-    
-                // Add app capability only if APP_PATH is defined
-                // String appPath = dotenv.get("APP_PATH");
-                // if (appPath != null && !appPath.isEmpty()) {
-                //     capabilities.setCapability("appium:app", System.getProperty("user.dir") + "/" + appPath);
-                // }
-    
-                // Initialize the AppiumDriver
-                driver = new AppiumDriver(new URL(dotenv.get("APPIUM_SERVER")), capabilities);
+                // Use UiAutomator2Options for Android
+                UiAutomator2Options options = new UiAutomator2Options()
+                        .setPlatformName(dotenv.get("PLATFORM_NAME"))
+                        .setDeviceName(dotenv.get("DEVICE_NAME"))
+                        .setAutomationName(dotenv.get("AUTOMATION_NAME"))
+                        .setPlatformVersion(dotenv.get("PLATFORM_VERSION"))
+                        .setAppPackage(dotenv.get("APP_PACKAGE"))
+                        .setAppActivity(dotenv.get("APP_ACTIVITY"))
+                        .setNoReset(Boolean.parseBoolean(dotenv.get("APPIUM_NORESET")))
+                        .setApp(System.getProperty("user.dir") + APK_URL_STRING);
+
+                // Initialize the Appium driver
+                driver = new AppiumDriver(new URL(dotenv.get("APPIUM_SERVER")), options);
+
             } catch (Exception e) {
                 throw new RuntimeException("Failed to initialize AppiumDriver", e);
             }
         }
         return driver;
     }
-    
 
-    public static DesiredCapabilities getCapabilities() {
-    if (driver == null) {
-        throw new IllegalStateException("Driver not initialized. Call getAppiumDriver() first.");
-    }
-    return (DesiredCapabilities) driver.getCapabilities();
+    public static Map<String, Object> getCapabilities() {
+        if (driver == null) {
+            throw new IllegalStateException("Driver not initialized. Call getAppiumDriver() first.");
+        }
+        // Return the capabilities as a map
+        return driver.getCapabilities().asMap();
     }
 
     /**
@@ -90,22 +88,24 @@ public class AppiumDriverManager {
     /**
      * Scroll down the screen
      */
-public static void scrollDown() {
-    Dimension dimension = driver.manage().window().getSize();
-    int startX = dimension.width / 2;
-    int startY = (int) (dimension.height * 0.8);
-    int endY = (int) (dimension.height * 0.2);
+    public static void scrollDown() {
+        Dimension dimension = driver.manage().window().getSize();
+        int startX = dimension.width / 2;
+        int startY = (int) (dimension.height * 0.8);
+        int endY = (int) (dimension.height * 0.2);
 
-    PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
-    Sequence swipe = new Sequence(finger, 0);
+        PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
+        Sequence swipe = new Sequence(finger, 0);
 
-    swipe.addAction(finger.createPointerMove(java.time.Duration.ofMillis(0), PointerInput.Origin.viewport(), startX, startY));
-    swipe.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-    swipe.addAction(finger.createPointerMove(java.time.Duration.ofMillis(500), PointerInput.Origin.viewport(), startX, endY));
-    swipe.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+        swipe.addAction(finger.createPointerMove(java.time.Duration.ofMillis(100), PointerInput.Origin.viewport(),
+                startX, startY));
+        swipe.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
+        swipe.addAction(finger.createPointerMove(java.time.Duration.ofMillis(800), PointerInput.Origin.viewport(),
+                startX, endY));
+        swipe.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
 
-    driver.perform(Collections.singletonList(swipe));
-}
+        driver.perform(Collections.singletonList(swipe));
+    }
 
     /**
      * Check if an element is displayed
@@ -135,7 +135,7 @@ public static void scrollDown() {
      * Enter text in a field
      *
      * @param locator Locator for the field
-     * @param text Text to enter
+     * @param text    Text to enter
      */
     public static void enterText(By locator, String text) {
         WebElement element = waitForElementVisible(locator);
@@ -148,25 +148,27 @@ public static void scrollDown() {
      *
      * @param startXPercentage Start X percentage (0.0 to 1.0)
      * @param startYPercentage Start Y percentage (0.0 to 1.0)
-     * @param endXPercentage End X percentage (0.0 to 1.0)
-     * @param endYPercentage End Y percentage (0.0 to 1.0)
+     * @param endXPercentage   End X percentage (0.0 to 1.0)
+     * @param endYPercentage   End Y percentage (0.0 to 1.0)
      */
-    public static void swipeByPercentage(double startXPercentage, double startYPercentage, double endXPercentage, double endYPercentage) {
+    public static void swipeByPercentage(double startXPercentage, double startYPercentage, double endXPercentage,
+            double endYPercentage) {
         Dimension size = driver.manage().window().getSize();
         int startX = (int) (size.width * startXPercentage);
         int startY = (int) (size.height * startYPercentage);
         int endX = (int) (size.width * endXPercentage);
         int endY = (int) (size.height * endYPercentage);
-    
+
         PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
         Sequence swipe = new Sequence(finger, 0);
-    
-        swipe.addAction(finger.createPointerMove(java.time.Duration.ofMillis(0), PointerInput.Origin.viewport(), startX, startY));
+
+        swipe.addAction(finger.createPointerMove(java.time.Duration.ofMillis(0), PointerInput.Origin.viewport(), startX,
+                startY));
         swipe.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-        swipe.addAction(finger.createPointerMove(java.time.Duration.ofMillis(500), PointerInput.Origin.viewport(), endX, endY));
+        swipe.addAction(
+                finger.createPointerMove(java.time.Duration.ofMillis(500), PointerInput.Origin.viewport(), endX, endY));
         swipe.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-    
+
         driver.perform(Collections.singletonList(swipe));
     }
 }
-

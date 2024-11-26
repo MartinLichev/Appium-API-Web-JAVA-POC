@@ -20,7 +20,8 @@ public class GenericSteps {
     @BeforeAll
     public static void setup() {
         driver = WebDriverManager.getWebDriver();
-        wait = new WebDriverWait(driver, java.time.Duration.ofSeconds(10)); // Explicit wait with a timeout of 10 seconds
+        wait = new WebDriverWait(driver, java.time.Duration.ofSeconds(10)); // Explicit wait with a timeout of 10
+                                                                            // seconds
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
     }
 
@@ -67,8 +68,8 @@ public class GenericSteps {
 
     @When("^I press the \"([^\"]*)\" key$")
     public void pressKey(String key) {
-           Actions actions = new Actions(driver);
-    actions.sendKeys(key).perform();
+        Actions actions = new Actions(driver);
+        actions.sendKeys(key).perform();
     }
 
     // Utility method for getting locator by text and type
@@ -88,13 +89,15 @@ public class GenericSteps {
         switch (elementType.toLowerCase()) {
             case "field":
             case "input":
-                return By.xpath("//input[@placeholder='" + label + "'] | //label[contains(text(), '" + label + "')]/following-sibling::input");
+                return By.xpath("//input[@placeholder='" + label + "'] | //label[contains(text(), '" + label
+                        + "')]/following-sibling::input");
             case "textarea":
                 return By.xpath("//textarea[@placeholder='" + label + "']");
             case "button":
                 return By.xpath("//button[contains(text(), '" + label + "')]");
             case "checkbox":
-                return By.xpath("//label[contains(text(), '" + label + "')]/preceding-sibling::input[@type='checkbox']");
+                return By
+                        .xpath("//label[contains(text(), '" + label + "')]/preceding-sibling::input[@type='checkbox']");
             case "link":
                 return By.xpath("//a[contains(text(), '" + label + "')]");
             default:

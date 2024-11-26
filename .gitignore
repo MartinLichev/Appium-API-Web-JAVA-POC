@@ -1,1 +1,15 @@
+# Ignore everything under resources
+src/test/resources/*
+
+# Include only the features directory and its contents
+!src/test/resources/features/
+!src/test/resources/features/**
+
+# Explicitly ignore binaries and images directories (if needed)
+src/test/resources/binaries/
+src/test/resources/images/
+
+# General exclusions
 target/
+.DS_Store
+.env

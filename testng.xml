@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
 <suite name="Cucumber Tests" parallel="false">
-    <test name="Cucumber Feature Tests">
+    <!-- Run API tests first -->
+    <test name="API Feature Tests">
         <classes>
-            <class name="runners.AppiumTestNGRunner"/>
+            <class name="runners.APITestNGRunner"/> <!-- API Test Runner -->
+        </classes>
+    </test>
+
+    <!-- Run Appium tests after API tests -->
+    <test name="Appium Feature Tests">
+        <classes>
+            <class name="runners.AppiumTestNGRunner"/> <!-- Appium Test Runner -->
         </classes>
     </test>
 </suite>
+

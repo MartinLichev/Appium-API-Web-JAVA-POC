@@ -5,6 +5,7 @@ import io.cucumber.java.AfterAll;
 import io.cucumber.java.en.*;
 import io.restassured.response.Response;
 import utils.ApiUtils;
+import utils.MockServerUtils;
 
 import java.util.Map;
 
@@ -13,46 +14,37 @@ import static org.testng.Assert.assertEquals;
 
 public class GenericStepsAPI {
     private Response response;
-    private String baseUrl;
 
     @BeforeAll
     public static void setup() {
         System.out.println("Initializing API Test Setup...");
-        // Load environment variables or configurations
+        MockServerUtils.startMockServer();
     }
 
     @AfterAll
     public static void teardown() {
+        MockServerUtils.stopMockServer();
         System.out.println("API Test Execution Completed.");
-    }
-
-    @Given("^I set the API base URL to \"([^\"]*)\"$")
-    public void setBaseUrl(String url) {
-        this.baseUrl = url;
     }
 
     @When("^I send a GET request to \"([^\"]*)\"$")
     public void sendGetRequest(String endpoint) {
-        String url = constructUrl(endpoint);
-        response = ApiUtils.get(url);
+        response = ApiUtils.get(endpoint);
     }
 
     @When("^I send a POST request to \"([^\"]*)\" with payload:$")
     public void sendPostRequest(String endpoint, Map<String, String> payload) {
-        String url = constructUrl(endpoint);
-        response = ApiUtils.post(url, payload);
+        response = ApiUtils.post(endpoint, payload);
     }
 
     @When("^I send a PUT request to \"([^\"]*)\" with payload:$")
     public void sendPutRequest(String endpoint, Map<String, String> payload) {
-        String url = constructUrl(endpoint);
-        response = ApiUtils.put(url, payload);
+        response = ApiUtils.put(endpoint, payload);
     }
 
     @When("^I send a DELETE request to \"([^\"]*)\"$")
     public void sendDeleteRequest(String endpoint) {
-        String url = constructUrl(endpoint);
-        response = ApiUtils.delete(url);
+        response = ApiUtils.delete(endpoint);
     }
 
     @Then("^the response status code should be (\\d+)$")
@@ -72,11 +64,22 @@ public class GenericStepsAPI {
         }
     }
 
-    // Helper method to construct the complete URL
-    private String constructUrl(String endpoint) {
-        if (baseUrl == null) {
-            throw new IllegalStateException("Base URL is not set. Please set the base URL using the step: I set the API base URL to \"<URL>\"");
-        }
-        return baseUrl + endpoint;
+    @Then("^the response body should be empty$")
+    public void the_response_body_should_be_empty() {
+        String responseBody = response.getBody().asString().trim();
+        assertEquals(responseBody, "", "Expected response body to be empty, but it was not.");
     }
+
+    @Then("^the response body should contain a count of (\\d+)$")
+    public void verifyResponseBodyCount(int expectedCount) {
+        int actualCount = response.then().extract().path("count");
+        assertEquals(actualCount, expectedCount, "The 'count' field does not match the expected value.");
+    }
+
+    @Then("^the response body should have (\\d+) people in results$")
+    public void verifyResultsSize(int expectedSize) {
+        int actualSize = response.then().extract().path("results.size()");
+        assertEquals(actualSize, expectedSize, "The 'results' array size does not match the expected value.");
+    }
+
 }

@@ -15,9 +15,8 @@ public class GenericSteps {
 
     private static AppiumDriver driver;
 
-
     @BeforeAll
-    public static void setup() {
+    public static void setupDriver() {
         // Ensure the driver is initialized before any test runs
         if (driver == null) {
             driver = AppiumDriverManager.getAppiumDriver();
@@ -25,44 +24,44 @@ public class GenericSteps {
     }
 
     @AfterAll
-    public static void teardown() {
+    public static void quitDriver() {
         // Quit the driver after all tests
         AppiumDriverManager.quitDriver();
     }
 
-    @Given("^I launch the app$")
-    public void iLaunchTheApp() {
+    @Given("the application is launched")
+    public void theApplicationIsLaunched() {
         // App launch confirmation
         System.out.println("App is launched successfully with the following capabilities:");
         System.out.println(AppiumDriverManager.getCapabilities());
     }
 
-    @When("^I click the element with \"([^\"]*)\" locator \"([^\"]*)\"$")
-    public void iClickElement(String locatorType, String locatorValue) {
+    @When("I tap the element identified by {string} with value {string}")
+    public void iTapElement(String locatorType, String locatorValue) {
         By locator = getLocatorByType(locatorType, locatorValue);
         AppiumDriverManager.tapElement(locator);
     }
 
-    @When("^I enter \"([^\"]*)\" in the element with \"([^\"]*)\" locator \"([^\"]*)\"$")
-    public void iEnterTextInElement(String text, String locatorType, String locatorValue) {
+    @When("I input {string} into the field identified by {string} with value {string}")
+    public void iInputTextIntoField(String text, String locatorType, String locatorValue) {
         By locator = getLocatorByType(locatorType, locatorValue);
         AppiumDriverManager.enterText(locator, text);
     }
 
-    @Then("^I should see the element with \"([^\"]*)\" locator \"([^\"]*)\"$")
-    public void iShouldSeeTheElement(String locatorType, String locatorValue) {
+    @Then("the element identified by {string} with value {string} should be visible")
+    public void theElementShouldBeVisible(String locatorType, String locatorValue) {
         By locator = getLocatorByType(locatorType, locatorValue);
         AppiumDriverManager.waitForElementVisible(locator);
     }
 
-    @Then("^I should see the text \"([^\"]*)\"$")
-    public void iShouldSeeTheText(String text) {
+    @Then("the text {string} should be visible on the screen")
+    public void theTextShouldBeVisible(String text) {
         By locator = By.xpath("//*[contains(@text, '" + text + "') or contains(@content-desc, '" + text + "')]");
         AppiumDriverManager.waitForElementVisible(locator);
     }
 
-    @When("^I (check|uncheck) the checkbox with \"([^\"]*)\" locator \"([^\"]*)\"$")
-    public void iCheckOrUncheckCheckbox(String action, String locatorType, String locatorValue) {
+    @When("I {string} the checkbox identified by {string} with value {string}")
+    public void iToggleCheckbox(String action, String locatorType, String locatorValue) {
         By locator = getLocatorByType(locatorType, locatorValue);
         WebElement checkbox = driver.findElement(locator);
         boolean isChecked = checkbox.isSelected();
@@ -74,7 +73,7 @@ public class GenericSteps {
         }
     }
 
-    @Then("^the \"([^\"]*)\" should be successfully created$")
+    @Then("a new {string} entity should be successfully created")
     public void verifyEntityCreation(String entityType, Map<String, String> entityDetails) {
         System.out.println("Verifying " + entityType + " creation with details: " + entityDetails);
     }
@@ -82,7 +81,8 @@ public class GenericSteps {
     /**
      * Utility method to get a locator by its type.
      *
-     * @param locatorType  The type of the locator (e.g., id, xpath, accessibilityId, etc.)
+     * @param locatorType  The type of the locator (e.g., id, xpath,
+     *                     accessibilityId, etc.)
      * @param locatorValue The value of the locator
      * @return A `By` object representing the locator
      */
@@ -95,13 +95,25 @@ public class GenericSteps {
             case "classname":
                 return By.className(locatorValue);
             case "name":
-                return By.name(locatorValue); // Deprecated but supported for backward compatibility
+                return By.name(locatorValue);
             case "tagname":
                 return By.tagName(locatorValue);
-                case "text":
-            return By.xpath(String.format("//*[contains(@text, '%s') or contains(@content-desc, '%s')]", locatorValue, locatorValue));
-        default:
-
+            case "text":
+                return By.xpath(String.format("//*[contains(@text, '%s') or contains(@content-desc, '%s')]",
+                        locatorValue, locatorValue));
+            case "accessibilityid":
+                return By.xpath(String.format("//*[@content-desc='%s']", locatorValue));
+            case "attribute":
+                String[] parts = locatorValue.split("=", 2);
+                if (parts.length == 2) {
+                    String attributeName = parts[0];
+                    String attributeValue = parts[1];
+                    return By.xpath(String.format("//*[@%s='%s']", attributeName, attributeValue));
+                } else {
+                    throw new IllegalArgumentException(
+                            "Invalid attribute locator value. Expected format: 'attribute=value'");
+                }
+            default:
                 throw new IllegalArgumentException("Unsupported locator type: " + locatorType);
         }
     }
